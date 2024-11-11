@@ -92,6 +92,7 @@ def parse_level(symbol_data, id_data):
     blocks = {}
     goal_positions = []
 
+    # Check level file for character-block mappings 
     for y, (symbol_row, id_row) in enumerate(zip(symbol_data, id_data)):
         for x, (symbol_cell, id_cell) in enumerate(zip(symbol_row, id_row)):
             symbol = symbol_cell
@@ -142,31 +143,36 @@ def check_collision(head_x, head_y, snake, walls, blocks, snake_segments):
 
     return 'no_collision'
 
-def darken_color(color, factor=0.7):
-    return tuple(int(c * factor) for c in color)
+def darken_col(col, factor=0.4):
+    return tuple(int(c * factor) for c in col)
 
-def color_key_to_str(color_key):
-    if isinstance(color_key, tuple):
-        return ''.join(color_key)
+def col_key_to_str(col_key):
+    if isinstance(col_key, tuple):
+        combination_map = {
+            ('R', 'G'): 'Y',
+            ('G', 'B'): 'C',
+            ('R', 'B'): 'M'
+        }
+        return combination_map.get(col_key, ''.join(col_key))
     else:
-        return color_key
+        return col_key
 
 def draw_snake_segments(snake_segments):
-    for pos, color_tuples in snake_segments.items():
+    for pos, colour_tuples in snake_segments.items():
         rect = pygame.Rect(pos[0] * GRID_SQUARE_SIZE, pos[1] * GRID_SQUARE_SIZE,
                                     GRID_SQUARE_SIZE, GRID_SQUARE_SIZE)
-        if len(color_tuples) == 1:
-            color, color_key = color_tuples[0]
-            image_key = f'snake_{color_key}'
+        if len(colour_tuples) == 1:
+            col, col_key = colour_tuples[0]
+            image_key = f'snake_{col_key}'
             image = image_assets.get(image_key)
             if image:
                 screen.blit(image, rect)
             else:
-                pygame.draw.rect(screen, color, rect)
+                pygame.draw.rect(screen, col, rect)
         else:
-            # Multiple snakes in the same position
-            colors = [col for col, key in color_tuples]
-            mixed_col = mix_cols(colors)
+            # Multiple snakes, same position
+            colours = [col for col, key in colour_tuples]
+            mixed_col = mix_cols(colours)
             pygame.draw.rect(screen, mixed_col, rect)
 
 def mix_cols(cols):
@@ -237,42 +243,42 @@ def game(level_active):
 
     # Image - snake
     for snake in snakes:
-        color_key = snake.colour_key
+        col_key = snake.colour_key
         image = None
         try:
-            image_filename = f'assets/snake_{color_key}.png'
+            image_filename = f'assets/snake_{col_key}.png'
             image = pygame.image.load(image_filename).convert_alpha()
         except:
             pass
-        image_assets[f'snake_{color_key}'] = image
+        image_assets[f'snake_{col_key}'] = image
 
     # Load images for blocks and switches
-    used_color_keys = set()
+    used_col_keys = set()
 
-    for color_key in blocks.keys():
-        used_color_keys.add(color_key)
-    for color_key in switches.keys():
-        used_color_keys.add(color_key)
+    for col_key in blocks.keys():
+        used_col_keys.add(col_key)
+    for col_key in switches.keys():
+        used_col_keys.add(col_key)
 
-    for color_key in used_color_keys:
+    for col_key in used_col_keys:
         # Load block image
         block_image = None
         try:
-            color_key_str = color_key_to_str(color_key)
-            image_filename = f'assets/block_{color_key_str}.png'
+            col_key_str = col_key_to_str(col_key)
+            image_filename = f'assets/block_{col_key_str}.png'
             block_image = pygame.image.load(image_filename).convert_alpha()
         except:
             pass
-        image_assets[f'block_{color_key}'] = block_image
+        image_assets[f'block_{col_key}'] = block_image
 
         # Load switch image
         switch_image = None
         try:
-            image_filename = f'assets/switch_{color_key_str}.png'
+            image_filename = f'assets/switch_{col_key_str}.png'
             switch_image = pygame.image.load(image_filename).convert_alpha()
         except:
             pass
-        image_assets[f'switch_{color_key}'] = switch_image
+        image_assets[f'switch_{col_key}'] = switch_image
 
     while True:
         screen.fill(BLACK)
@@ -370,8 +376,8 @@ def game(level_active):
                         snake.grow()
 
         # Check colour-combo switches
-        for pos, color_tuples in snake_segments.items():
-            if len(color_tuples) >= 2:
+        for pos, colour_tuples in snake_segments.items():
+            if len(colour_tuples) >= 2:
                 col_keys = [snake.colour_key for snake in snakes if snake.positions[0] == pos]
                 colour_keys_set = set(col_keys)
                 for combo_colour in [key for key in switches.keys() if isinstance(key, tuple)]:
@@ -406,7 +412,7 @@ def game(level_active):
 
         # Draw blocks
         for col_key, ids in blocks.items():
-            color_key_str = color_key_to_str(col_key)
+            col_key_str = col_key_to_str(col_key)
             image_key = f'block_{col_key}'
             image = image_assets.get(image_key)
             for id_num, positions in ids.items():
@@ -417,12 +423,12 @@ def game(level_active):
                         screen.blit(image, rect)
                     else:
                         col = colour_mappings.get(col_key, WHITE)
-                        darker_col = darken_color(col)
+                        darker_col = darken_col(col)
                         pygame.draw.rect(screen, darker_col, rect)
 
         # Draw switches
         for col_key, ids in switches.items():
-            color_key_str = color_key_to_str(col_key)
+            col_key_str = col_key_to_str(col_key)
             image_key = f'switch_{col_key}'
             image = image_assets.get(image_key)
             for id_num, positions in ids.items():
@@ -433,7 +439,7 @@ def game(level_active):
                         screen.blit(image, rect)
                     else:
                         col = colour_mappings.get(col_key, WHITE)
-                        # Adjust rect size to be slightly smaller
+                        # Adjust rect size - slightly smaller
                         small_rect = rect.inflate(-GRID_SQUARE_SIZE * 0.2, -GRID_SQUARE_SIZE * 0.2)
                         pygame.draw.rect(screen, col, small_rect)
 
