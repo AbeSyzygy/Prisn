@@ -1,2 +1,2 @@
-# Prisn
-Wow amazing game
+# hyper_snake_in_technicolour
+Amazing
