@@ -92,11 +92,12 @@ def parse_level(symbol_data, id_data):
     blocks = {}
     goal_positions = []
 
-    # Check level file for character-block mappings 
+    # Check level file for character-block mappings
     for y, (symbol_row, id_row) in enumerate(zip(symbol_data, id_data)):
         for x, (symbol_cell, id_cell) in enumerate(zip(symbol_row, id_row)):
             symbol = symbol_cell
-            id_char = id_cell
+            # deal with id_char whitespace
+            id_char = id_cell.strip()
 
             if symbol == 'W':
                 walls.append((x, y))
@@ -108,7 +109,7 @@ def parse_level(symbol_data, id_data):
                 col_key = symbol_col_map.get(symbol)
                 if col_key:
                     if symbol.islower():
-                        # switch,
+                        # switch
                         switches.setdefault(col_key, {}).setdefault(id_char, []).append((x, y))
                     else:
                         # ...block
@@ -157,23 +158,68 @@ def col_key_to_str(col_key):
     else:
         return col_key
 
-def draw_snake_segments(snake_segments):
+def draw_snake_segments(snake_segments, snakes):
     for pos, colour_tuples in snake_segments.items():
         rect = pygame.Rect(pos[0] * GRID_SQUARE_SIZE, pos[1] * GRID_SQUARE_SIZE,
-                                    GRID_SQUARE_SIZE, GRID_SQUARE_SIZE)
+                           GRID_SQUARE_SIZE, GRID_SQUARE_SIZE)
         if len(colour_tuples) == 1:
             col, col_key = colour_tuples[0]
-            image_key = f'snake_{col_key}'
-            image = image_assets.get(image_key)
-            if image:
-                screen.blit(image, rect)
+            # Identify if this position is head
+            head_snake = None
+
+            for snake in snakes:
+                if snake.positions[0] == pos and snake.colour_key == col_key:
+                    head_snake = snake
+                    break
+
+            if head_snake:
+                direction = head_snake.direction
+                image_key = f'snake_{col_key}'
+                image = image_assets.get(image_key)
+                if image:
+                    if direction == LEFT:
+                        image = pygame.transform.flip(image, True, False)
+                        print(f"Flipping head image for snake '{col_key}' moving LEFT.")
+                    screen.blit(image, rect)
+                else:
+                    pygame.draw.rect(screen, col, rect)
+
             else:
-                pygame.draw.rect(screen, col, rect)
+                # ...otherwise, this is body segment
+                image_key = f'snake_{col_key}'
+                image = image_assets.get(image_key)
+                if image:
+                    screen.blit(image, rect)
+                else:
+                    pygame.draw.rect(screen, col, rect)
+
         else:
             # Multiple snakes, same position
-            colours = [col for col, key in colour_tuples]
-            mixed_col = mix_cols(colours)
-            pygame.draw.rect(screen, mixed_col, rect)
+            unique_col_keys = set(col_key for _, col_key in colour_tuples)
+            if len(unique_col_keys) == 2:
+                combo = tuple(sorted(unique_col_keys))
+                combined_key_str = col_key_to_str(combo)
+            elif len(unique_col_keys) > 2:
+                # If >2 overlapping character colours, combine colours
+                combined_key_str = None
+            else:
+                # one colour, multiple characters
+                combined_key_str = col_key_to_str(next(iter(unique_col_keys)))
+            if combined_key_str and isinstance(combined_key_str, str):
+                image_key = f'snake_{combined_key_str}'
+                image = image_assets.get(image_key)
+                if image:
+                    screen.blit(image, rect)
+                    print(f"combined snake image '{image_key}.png' at pos: {pos}.")
+                else:
+                    print(f"no combined snake image '{image_key}.png'")
+                    # Defauklt to mixed colour-combined square
+                    mixed_col = mix_cols([col for col, _ in colour_tuples])
+                    pygame.draw.rect(screen, mixed_col, rect)
+            else:
+                # Default to colour-combined square
+                mixed_col = mix_cols([col for col, _ in colour_tuples])
+                pygame.draw.rect(screen, mixed_col, rect)
 
 def mix_cols(cols):
     r = min(sum(colour[0] for colour in cols), 255)
@@ -182,8 +228,8 @@ def mix_cols(cols):
     return (r, g, b)
 
 def draw_character_selection(current_snake, snake_colours, screen_width):
-    indicator_size = 30
-    padding = 10
+    indicator_size = 23
+    padding = 0
     num_snakes = len(snake_colours)
     start_x = screen_width - (indicator_size + padding) * num_snakes
 
@@ -229,30 +275,49 @@ def game(level_active):
     wall_image = None
     try:
         wall_image = pygame.image.load('assets/wall.png').convert_alpha()
-    except:
-        pass
+        print("Loaded 'wall.png'")
+    except Exception as e:
+        print(f"no 'wall.png': {e}")
     image_assets['wall'] = wall_image
 
     # Image - win
     goal_image = None
     try:
         goal_image = pygame.image.load('assets/goal.png').convert_alpha()
-    except:
-        pass
+        print("Loaded 'goal.png'")
+    except Exception as e:
+        print(f"no 'goal.png': {e}")
     image_assets['goal'] = goal_image
 
     # Image - snake
     for snake in snakes:
         col_key = snake.colour_key
+        image_key = f'snake_{col_key}'
         image = None
         try:
             image_filename = f'assets/snake_{col_key}.png'
             image = pygame.image.load(image_filename).convert_alpha()
-        except:
-            pass
-        image_assets[f'snake_{col_key}'] = image
+            print(f"Loaded '{image_filename}'")
+        except Exception as e:
+            print(f"no snake image '{image_filename}': {e}")
+        image_assets[image_key] = image
 
-    # Load images for blocks and switches
+    # Load combined snake images (e.g., snake_Y.png, snake_C.png, snake_M.png)
+    # WHY doesn't this wooooork?
+    combined_colours = [key for key in colour_mappings.keys() if isinstance(key, tuple)]
+    for combo in combined_colours:
+        combined_key_str = col_key_to_str(combo)
+        image_key = f'snake_{combined_key_str}'
+        image = None
+        try:
+            combined_image_filename = f'assets/snake_{combined_key_str}.png'
+            image = pygame.image.load(combined_image_filename).convert_alpha()
+            print(f"Loaded combined character image '{combined_image_filename}'")
+        except Exception as e:
+            print(f"no combined character image '{combined_image_filename}': {e}")
+        image_assets[image_key] = image
+
+    # Load images - blocks, switches
     used_col_keys = set()
 
     for col_key in blocks.keys():
@@ -262,36 +327,31 @@ def game(level_active):
 
     for col_key in used_col_keys:
         # Load block image
+        block_key = f'block_{col_key_to_str(col_key)}'
         block_image = None
         try:
             col_key_str = col_key_to_str(col_key)
             image_filename = f'assets/block_{col_key_str}.png'
             block_image = pygame.image.load(image_filename).convert_alpha()
-        except:
-            pass
+            print(f"Loaded block image '{image_filename}'")
+        except Exception as e:
+            print(f"no block image '{image_filename}': {e}")
         image_assets[f'block_{col_key}'] = block_image
 
         # Load switch image
+        switch_key = f'switch_{col_key_to_str(col_key)}'
         switch_image = None
         try:
             image_filename = f'assets/switch_{col_key_str}.png'
             switch_image = pygame.image.load(image_filename).convert_alpha()
-        except:
-            pass
+            print(f"Loaded switch image '{image_filename}'")
+        except Exception as e:
+            print(f"no switch image '{image_filename}': {e}")
         image_assets[f'switch_{col_key}'] = switch_image
 
     while True:
         screen.fill(BLACK)
         current_time = pygame.time.get_ticks()
-
-        # Collect snake segments
-        snake_segments = {}
-        for snake in snakes:
-            for pos in snake.positions:
-                if pos in snake_segments:
-                    snake_segments[pos].append((snake.col, snake.colour_key))
-                else:
-                    snake_segments[pos] = [(snake.col, snake.colour_key)]
 
         # Event handling
         for event in pygame.event.get():
@@ -302,20 +362,27 @@ def game(level_active):
                 # Character select
                 if event.key == pygame.K_1 and len(snakes) >= 1:
                     current_snake = 0
+                    print("Selected R")
                 elif event.key == pygame.K_2 and len(snakes) >= 2:
                     current_snake = 1
+                    print("Selected G")
                 elif event.key == pygame.K_3 and len(snakes) >= 3:
                     current_snake = 2
+                    print("Selected B")
                 # Movement keys
                 elif event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
                     if event.key == pygame.K_UP:
                         snakes[current_snake].set_direction(UP)
+                        print(f"Snake {current_snake + 1} set direction UP.")
                     elif event.key == pygame.K_DOWN:
                         snakes[current_snake].set_direction(DOWN)
+                        print(f"Snake {current_snake + 1} set direction DOWN.")
                     elif event.key == pygame.K_LEFT:
                         snakes[current_snake].set_direction(LEFT)
+                        print(f"Snake {current_snake + 1} set direction LEFT.")
                     elif event.key == pygame.K_RIGHT:
                         snakes[current_snake].set_direction(RIGHT)
+                        print(f"Snake {current_snake + 1} set direction RIGHT.")
 
                     snake = snakes[current_snake]
 
@@ -323,22 +390,25 @@ def game(level_active):
                     snake.move()
                     head_x, head_y = snake.positions[0]
 
-                    collision_type = check_collision(head_x, head_y, snake, walls, blocks, snake_segments)
+                    collision_type = check_collision(head_x, head_y, snake, walls, blocks, snake_segments={})
 
                     if collision_type == 'stop':
                         snake.positions = original_positions
+                        print(f"Snake {current_snake + 1} collided with wall or itself. Movement stopped.")
                     elif collision_type == 'death':
                         print("fuked it m8")
                         pygame.quit()
                         sys.exit()
                     else:
                         snake.last_move_time = current_time
+                        print(f"Snake {current_snake + 1} moved")
 
             elif event.type == pygame.KEYUP:
                 if event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
                     snakes[current_snake].direction = None
+                    print(f"Snake {current_snake + 1} stopped")
 
-        # Movement
+        # Movement (based on direction and MOVE_DELAY)
         if snakes[current_snake].direction:
             if current_time - snakes[current_snake].last_move_time >= MOVE_DELAY:
                 snake = snakes[current_snake]
@@ -347,39 +417,54 @@ def game(level_active):
                 snake.move()
                 head_x, head_y = snake.positions[0]
 
-                collision_type = check_collision(head_x, head_y, snake, walls, blocks, snake_segments)
+                collision_type = check_collision(head_x, head_y, snake, walls, blocks, snake_segments={})
 
                 if collision_type == 'stop':
                     snake.positions = original_positions
+                    print(f"Snake {current_snake + 1} collision -> stop")
                 elif collision_type == 'death':
-                    print("fuked it m8")
+                    print("fuked it m8.")
                     pygame.quit()
                     sys.exit()
                 else:
                     snake.last_move_time = current_time
+                    print(f"Snake {current_snake + 1} moved")
 
-        # Check switch activation
+        # Get snake head positions
+        head_positions = {}
+        for snake in snakes:
+            head_pos = snake.positions[0]
+            snake_col = snake.colour_key
+            if head_pos in head_positions:
+                head_positions[head_pos].append(snake_col)
+            else:
+                head_positions[head_pos] = [snake_col]
+
+
+        # //////// Check switch activation ////////
+
+        # Single-colour switches
         for snake in snakes:
             head_pos = snake.positions[0]
             snake_col = snake.colour_key
 
-            # Single-col switches
             if snake_col in switches:
                 for id_num, positions in list(switches[snake_col].items()):
                     if head_pos in positions:
-                        # matching-ID blocks removed
+                        # Remove matching-ID blocks
                         if snake_col in blocks and id_num in blocks[snake_col]:
                             del blocks[snake_col][id_num]
+                            print(f"Snake '{snake_col}' activated switch '{id_num}' -> block removed")
                         switches[snake_col][id_num].remove(head_pos)
                         if not switches[snake_col][id_num]:
                             del switches[snake_col][id_num]
                         snake.grow()
+                        print(f"Snake '{snake_col}' --> new length: {snake.length}")
 
-        # Check colour-combo switches
-        for pos, colour_tuples in snake_segments.items():
-            if len(colour_tuples) >= 2:
-                col_keys = [snake.colour_key for snake in snakes if snake.positions[0] == pos]
-                colour_keys_set = set(col_keys)
+        # Check colour combination switches
+        for pos, cols_at_pos in head_positions.items():
+            if len(cols_at_pos) >= 2:
+                colour_keys_set = set(cols_at_pos)
                 for combo_colour in [key for key in switches.keys() if isinstance(key, tuple)]:
                     if set(combo_colour) == colour_keys_set:
                         for id_num, positions in list(switches[combo_colour].items()):
@@ -387,13 +472,24 @@ def game(level_active):
                                 # Remove blocks with matching ID
                                 if combo_colour in blocks and id_num in blocks[combo_colour]:
                                     del blocks[combo_colour][id_num]
+                                    print(f"Combined snakes {combo_colour} activated switch '{id_num}'. Removed block.")
                                 switches[combo_colour][id_num].remove(pos)
                                 if not switches[combo_colour][id_num]:
                                     del switches[combo_colour][id_num]
-                                # Add snake segments
+                                # Add to trail for all involved snakes
                                 for snake in snakes:
                                     if snake.colour_key in combo_colour:
                                         snake.grow()
+                                        print(f"Snake '{snake.colour_key}' --> length: {snake.length}")
+
+        # Collect snake segments *after* movement + switch activation
+        snake_segments = {}
+        for snake in snakes:
+            for pos in snake.positions:
+                if pos in snake_segments:
+                    snake_segments[pos].append((snake.col, snake.colour_key))
+                else:
+                    snake_segments[pos] = [(snake.col, snake.colour_key)]
 
         # Check for win
         if all(snake.positions[0] in goal_positions for snake in snakes):
@@ -425,8 +521,20 @@ def game(level_active):
                         col = colour_mappings.get(col_key, WHITE)
                         darker_col = darken_col(col)
                         pygame.draw.rect(screen, darker_col, rect)
+        
+        # Draw - win blocks
+        for pos in goal_positions:
+            rect = pygame.Rect(pos[0] * GRID_SQUARE_SIZE, pos[1] * GRID_SQUARE_SIZE,
+                               GRID_SQUARE_SIZE, GRID_SQUARE_SIZE)
+            if image_assets['goal']:
+                screen.blit(image_assets['goal'], rect)
+            else:
+                pygame.draw.rect(screen, WHITE, rect)
 
-        # Draw switches
+        # Draw - characters with flipped + combined assets
+        draw_snake_segments(snake_segments, snakes)
+
+        # Draw - switches
         for col_key, ids in switches.items():
             col_key_str = col_key_to_str(col_key)
             image_key = f'switch_{col_key}'
@@ -439,22 +547,12 @@ def game(level_active):
                         screen.blit(image, rect)
                     else:
                         col = colour_mappings.get(col_key, WHITE)
-                        # Adjust rect size - slightly smaller
+                        # smaller rect
                         small_rect = rect.inflate(-GRID_SQUARE_SIZE * 0.2, -GRID_SQUARE_SIZE * 0.2)
                         pygame.draw.rect(screen, col, small_rect)
 
-        # Draw win blocks
-        for pos in goal_positions:
-            rect = pygame.Rect(pos[0] * GRID_SQUARE_SIZE, pos[1] * GRID_SQUARE_SIZE,
-                               GRID_SQUARE_SIZE, GRID_SQUARE_SIZE)
-            if image_assets['goal']:
-                screen.blit(image_assets['goal'], rect)
-            else:
-                pygame.draw.rect(screen, WHITE, rect)
 
-        # Draw snakes
-        draw_snake_segments(snake_segments)
-
+        # Draw - character selection indicator
         snake_colours = [snake.col for snake in snakes]
         draw_character_selection(current_snake, snake_colours, SCREEN_WIDTH)
 
