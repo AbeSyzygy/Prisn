@@ -179,7 +179,7 @@ def draw_snake_segments(snake_segments, snakes):
                 pygame.draw.rect(screen, col, rect)
 
             else:
-                pygame.draw.rect(screen, col, rect.inflate(-2, -2))
+                pygame.draw.rect(screen, col, rect.inflate(-4, -4))
 
         else:
             # Multiple snakes, same position
