@@ -376,17 +376,17 @@ def game(level_active):
                     current_snake = 2
                     print("Selected B")
                 # Movement keys
-                elif event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
-                    if event.key == pygame.K_UP:
+                elif event.key in (pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d):
+                    if event.key == pygame.K_w:
                         snakes[current_snake].set_direction(UP)
                         print(f"Snake {current_snake + 1} set direction UP.")
-                    elif event.key == pygame.K_DOWN:
+                    elif event.key == pygame.K_s:
                         snakes[current_snake].set_direction(DOWN)
                         print(f"Snake {current_snake + 1} set direction DOWN.")
-                    elif event.key == pygame.K_LEFT:
+                    elif event.key == pygame.K_a:
                         snakes[current_snake].set_direction(LEFT)
                         print(f"Snake {current_snake + 1} set direction LEFT.")
-                    elif event.key == pygame.K_RIGHT:
+                    elif event.key == pygame.K_d:
                         snakes[current_snake].set_direction(RIGHT)
                         print(f"Snake {current_snake + 1} set direction RIGHT.")
 
@@ -410,7 +410,7 @@ def game(level_active):
                         print(f"Snake {current_snake + 1} moved")
 
             elif event.type == pygame.KEYUP:
-                if event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
+                if event.key in (pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d):
                     snakes[current_snake].direction = None
                     print(f"Snake {current_snake + 1} stopped")
 
