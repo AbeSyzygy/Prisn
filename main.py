@@ -522,14 +522,6 @@ def game(level_active):
                         darker_col = darken_col(col)
                         pygame.draw.rect(screen, darker_col, rect)
         
-        # Draw - win blocks
-        for pos in goal_positions:
-            rect = pygame.Rect(pos[0] * GRID_SQUARE_SIZE, pos[1] * GRID_SQUARE_SIZE,
-                               GRID_SQUARE_SIZE, GRID_SQUARE_SIZE)
-            if image_assets['goal']:
-                screen.blit(image_assets['goal'], rect)
-            else:
-                pygame.draw.rect(screen, WHITE, rect)
 
         # Draw - characters with flipped + combined assets
         draw_snake_segments(snake_segments, snakes)
@@ -551,6 +543,14 @@ def game(level_active):
                         small_rect = rect.inflate(-GRID_SQUARE_SIZE * 0.2, -GRID_SQUARE_SIZE * 0.2)
                         pygame.draw.rect(screen, col, small_rect)
 
+        # Draw - win blocks
+        for pos in goal_positions:
+            rect = pygame.Rect(pos[0] * GRID_SQUARE_SIZE, pos[1] * GRID_SQUARE_SIZE,
+                               GRID_SQUARE_SIZE, GRID_SQUARE_SIZE)
+            if image_assets['goal']:
+                screen.blit(image_assets['goal'], rect)
+            else:
+                pygame.draw.rect(screen, WHITE, rect)
 
         # Draw - character selection indicator
         snake_colours = [snake.col for snake in snakes]
@@ -560,6 +560,6 @@ def game(level_active):
         clock.tick(FPS)
 
 if __name__ == "__main__":
-    default_level = "levels/lvl_1.txt"
+    default_level = "levels/lvl_2.txt"
     level_active = default_level
     game(level_active)
