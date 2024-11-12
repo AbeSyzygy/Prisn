@@ -10,7 +10,7 @@ G = Green
 B = Blue
 
 # [Block - Switch]:    
-# note: These are adjacent to their Colour's letter key
+# note: These are adjacent to their Colour's letter key (which is reserved for character start positions)
 [T - t] = Red
 [H - h] = Green
 [N - n] = Blue
@@ -19,4 +19,6 @@ B = Blue
 [C - C] = Cyan
 [M - m] = Magenta
 
-
+# ///////////////////////
+lvl_n.txt       # contains character starting positions and blocks layout
+lvl_n_map.txt   # overlay for lvl_n matrix with ID numbers linking separate switch-block pairs of the same category 
