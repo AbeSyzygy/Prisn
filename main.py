@@ -255,7 +255,7 @@ def game(level_active):
     SCREEN_HEIGHT = GRID_HEIGHT * GRID_SQUARE_SIZE
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("ayyylmao: Mega-Snake In Technicolour")
+    pygame.display.set_caption("PRISN")
 
     walls, snake_positions, switches, blocks, goal_positions = parse_level(symbol_data, id_data)
 
@@ -611,6 +611,6 @@ def show_title_screen():
 
 if __name__ == "__main__":
     show_title_screen()
-    first_level = "levels/lvl_3.txt"
+    first_level = "levels/lvl_1.txt"
     level_active = first_level
     game(level_active)

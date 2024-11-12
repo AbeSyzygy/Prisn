@@ -5,11 +5,11 @@ W t W WWW WW  WW
 WtWWW t 111 B WW
 W W W WWWWWWW WW
 WtW W   1 W1 n W
-W   tW W1WW nWWW
-WWWW W W WW  nnW
+W   tW W1WW1nWWW
+WWWW1W W WW  nnW
 WW   W    WWWW W
 W W    W  WW  nW
-W  tW   W WW WWW
+W  1W   W WW WWW
 W WW  WWW n11  W
 W 1W  W   WW   W
 WW    W  WWW  GW
