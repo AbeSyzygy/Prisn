@@ -612,6 +612,6 @@ def show_title_screen():
 
 if __name__ == "__main__":
     show_title_screen()
-    first_level = "levels/lvl_1.txt"
+    first_level = "levels/lvl_4.txt"
     level_active = first_level
     game(level_active)
