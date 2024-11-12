@@ -581,7 +581,7 @@ def show_title_screen():
     mixer.init()
     mixer.music.load('assets/audio/music/music.ogg')
     mixer.music.play(-1)
-    mixer.music.set_volume(0.2)
+    mixer.music.set_volume(0.35)
 
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("PRISN")
