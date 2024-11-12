@@ -185,6 +185,7 @@ def draw_snake_segments(snake_segments, snakes):
                         print(f"Flipping head image for snake '{col_key}' moving LEFT.")
                     screen.blit(image, rect)
                 else:
+                    pygame.draw.rect(screen, col, rect.inflate(4, 4))
                     pygame.draw.rect(screen, col, rect)
 
             else:
