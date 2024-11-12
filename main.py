@@ -2,6 +2,9 @@ import pygame
 import sys
 import os
 
+from pygame.locals import *
+from pygame import mixer
+
 # SETTINGS #
 #//////////////////////////////////////////////////////////////////////////////
 GRID_SQUARE_SIZE = 20
@@ -136,11 +139,11 @@ def check_collision(head_x, head_y, snake, walls, blocks, snake_segments):
                     if snake_col in col_key:
                         return 'stop'
                     else:
-                        return 'death'
+                        return 'stop'
                 elif col_key == snake_col:
                     return 'stop'
                 else:
-                    return 'death'
+                    return 'stop'
 
     return 'no_collision'
 
@@ -240,6 +243,12 @@ def draw_character_selection(current_snake, snake_colours, screen_width):
         if i == current_snake:
             inner_rect = rect.inflate(-10, -10)
             pygame.draw.rect(screen, BLACK, inner_rect)
+
+def get_next_level_filename(current_level):
+    # Generate next level's filename, given active level's filename
+    level_num = int(current_level.split('_')[-1].split('.')[0])
+    next_level = f"levels/lvl_{level_num + 1}.txt"
+    return next_level if os.path.isfile(next_level) else None
 
 def game(level_active):
     global screen, image_assets
@@ -349,6 +358,9 @@ def game(level_active):
             print(f"no switch image '{image_filename}': {e}")
         image_assets[f'switch_{col_key}'] = switch_image
 
+
+    # ////////////////// MAIN LOOP (wow look at it go!) ////////////////// #
+
     while True:
         screen.fill(BLACK)
         current_time = pygame.time.get_ticks()
@@ -359,6 +371,10 @@ def game(level_active):
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
+                # Handle reset
+                if event.key == pygame.K_r:
+                    print("Level reset")
+                    game(level_active)
                 # Character select
                 if event.key == pygame.K_1 and len(snakes) >= 1:
                     current_snake = 0
@@ -494,8 +510,17 @@ def game(level_active):
         # Check for win
         if all(snake.positions[0] in goal_positions for snake in snakes):
             print("$$$ CASH PRIZES YOU ARE WINNER $$$")
-            pygame.quit()
-            sys.exit()
+            next_level = get_next_level_filename(level_active)
+            if next_level:
+                print(f"loading next level: {next_level}")
+                game(next_level)
+            else:
+                print("That'll do now get to bed.")
+                level_active = first_level
+                next_level = first_level
+                show_title_screen()
+                game(first_level)
+
 
         # Draw walls
         for wall in walls:
@@ -559,7 +584,43 @@ def game(level_active):
         pygame.display.flip()
         clock.tick(FPS)
 
+def show_title_screen():
+    # TITLE SCREEN
+    # TODO should have instructions and backstory and stuff
+
+    mixer.init()
+    mixer.music.load('assets/audio/music/music.ogg')
+    mixer.music.play(-1)
+
+    screen = pygame.display.set_mode((800, 600))
+    pygame.display.set_caption("PRISN")
+
+    # Title screen assets
+    title_image = pygame.image.load("assets/title_screen/title_screen.png").convert()
+    begin_button = pygame.image.load("assets/title_screen/begin_button.png").convert_alpha()
+
+    title_rect = title_image.get_rect(center = (400, 250))
+    button_rect = begin_button.get_rect(center = (400, 450))
+
+    while True:
+        screen.fill((0, 0, 0))
+
+        screen.blit(title_image, title_rect)
+        screen.blit(begin_button, button_rect)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if button_rect.collidepoint(event.pos):
+                    return
+        pygame.display.flip()
+        pygame.time.Clock().tick(30)
+
+
 if __name__ == "__main__":
-    default_level = "levels/lvl_2.txt"
-    level_active = default_level
+    show_title_screen()
+    first_level = "levels/lvl_3.txt"
+    level_active = first_level
     game(level_active)
