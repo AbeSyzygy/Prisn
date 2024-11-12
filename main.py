@@ -176,26 +176,10 @@ def draw_snake_segments(snake_segments, snakes):
                     break
 
             if head_snake:
-                direction = head_snake.direction
-                image_key = f'snake_{col_key}'
-                image = image_assets.get(image_key)
-                if image:
-                    if direction == LEFT:
-                        image = pygame.transform.flip(image, True, False)
-                        print(f"Flipping head image for snake '{col_key}' moving LEFT.")
-                    screen.blit(image, rect)
-                else:
-                    pygame.draw.rect(screen, col, rect.inflate(4, 4))
-                    pygame.draw.rect(screen, col, rect)
+                pygame.draw.rect(screen, col, rect)
 
             else:
-                # ...otherwise, this is body segment
-                image_key = f'snake_{col_key}'
-                image = image_assets.get(image_key)
-                if image:
-                    screen.blit(image, rect)
-                else:
-                    pygame.draw.rect(screen, col, rect)
+                pygame.draw.rect(screen, col, rect.inflate(-2, -2))
 
         else:
             # Multiple snakes, same position
@@ -209,21 +193,26 @@ def draw_snake_segments(snake_segments, snakes):
             else:
                 # one colour, multiple characters
                 combined_key_str = col_key_to_str(next(iter(unique_col_keys)))
+
             if combined_key_str and isinstance(combined_key_str, str):
-                image_key = f'snake_{combined_key_str}'
-                image = image_assets.get(image_key)
-                if image:
-                    screen.blit(image, rect)
-                    print(f"combined snake image '{image_key}.png' at pos: {pos}.")
-                else:
-                    print(f"no combined snake image '{image_key}.png'")
-                    # Defauklt to mixed colour-combined square
-                    mixed_col = mix_cols([col for col, _ in colour_tuples])
+                # Default to mixed colour-combined square
+                mixed_col = mix_cols([col for col, _ in colour_tuples])
+
+                head_found = False
+
+                for snake in snakes:
+                    if snake.positions[0] == pos:
+                        print("FOUND MIXED HEAD COLOUR!")
+                        head_found = True
+                        break
+                if head_found:
                     pygame.draw.rect(screen, mixed_col, rect)
+                else:
+                    pygame.draw.rect(screen, mixed_col, rect.inflate(-4, -4))
             else:
                 # Default to colour-combined square
                 mixed_col = mix_cols([col for col, _ in colour_tuples])
-                pygame.draw.rect(screen, mixed_col, rect)
+                pygame.draw.rect(screen, mixed_col, rect.inflate(-4, -4))
 
 def mix_cols(cols):
     r = min(sum(colour[0] for colour in cols), 255)
