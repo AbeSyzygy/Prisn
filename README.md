@@ -1,2 +1,2 @@
 # Prisn
-Amazing
+Amazing game
